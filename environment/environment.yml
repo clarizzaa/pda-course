@@ -8,6 +8,13 @@
 # in requirements.txt rather than here.
 #
 # Verified: all 10 tests in tests/ pass on this combination (see reports/DECISIONS.md).
+#
+# If site-packages is read-only (containers, shared/managed installs), importing scanpy
+# raises `RuntimeError: cannot cache function 'agg_sum_csr-parallel': no locator
+# available` — numba tries to write its JIT cache next to the installed module. Point it
+# somewhere writable first:
+#   export NUMBA_CACHE_DIR="$PWD/.numba_cache"
+# Not needed for a normal local conda env, where site-packages is writable.
 name: pda-scrna
 channels:
   - conda-forge
