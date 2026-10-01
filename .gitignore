@@ -1,0 +1,24 @@
+# Raw inputs and generated intermediates stay out of git: they are large, and
+# data/processed is recreatable from data/raw by workflows/run_all.sh.
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/metadata/
+*.h5ad
+*.h5
+*.mtx
+*.mtx.gz
+
+# results/ and figures/ ARE tracked — reports cite them. Only the bulky
+# pseudobulk count matrix is excluded.
+results/pseudobulk_counts.csv
+
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.numba_cache/
+.mpl/
+.ipynb_checkpoints/
+.DS_Store
+.venv/

@@ -1,5 +1,105 @@
+# Parameters for the immunotherapy response analysis.
+# Every tunable lives here (WORKSPACE.md rule 1). Code reads it; code never hard-codes.
+# The first five keys are the originals from this file and are unchanged.
+
 min_genes: 300
 max_mito_fraction: 0.15
 normalization: log1p
 n_pcs: 30
 random_seed: 42
+
+# ---- paths (relative to repo root) ----
+paths:
+  raw: data/raw                      # filled by you; see data/metadata/SOURCES.md
+  matrix: null                        # REQUIRED: e.g. data/raw/counts.h5ad, or a 10x MTX dir
+  sample_meta: null                   # optional CSV of sample-level covariates
+  processed: data/processed
+  results: results
+  figures: figures
+
+# ---- obs column names in your dataset ----
+keys:
+  sample: sample_id                   # experimental unit for all group tests (rule 6)
+  response: response                  # two levels, e.g. R / NR
+  patient: null                       # set if multiple samples per patient
+  timepoint: null                     # set for the paired pre/on-treatment contrast
+  batch: null                         # set to test treatment-vs-batch confounding (rule 7)
+
+# ---- QC ----
+qc:
+  mito_prefix: "MT-"                  # "mt-" for mouse
+  ribo_prefixes: ["RPS", "RPL"]
+  min_cells_per_gene: 3
+  # Upper n_genes bound is a per-sample quantile, not a global count: a single global
+  # cutoff removes most cells from whichever sample was sequenced shallowest, which
+  # then masquerades as a composition difference between response groups.
+  max_genes_quantile: 0.98
+  min_cells_per_sample: 100           # samples below this are dropped from group tests
+
+# ---- normalisation / feature selection ----
+norm:
+  target_sum: 10000
+  n_hvg: 2000
+  hvg_flavor: seurat_v3               # consumes raw counts
+  hvg_batch_key_from: sample          # select HVGs within sample, then intersect
+  # Clonotype V/J/C genes track individual expanded clones rather than cell state,
+  # so they are excluded from the HVG set.
+  exclude_hvg_pattern: "^(TR[ABGD][VJC]|IG[HKL][VJC]|MT-)"
+  scale_max_value: 10
+
+# ---- embedding / clustering ----
+embed:
+  integrate: harmony                  # harmony | none
+  integrate_key_from: sample
+  n_neighbors: 15
+  leiden_resolutions: [0.4, 0.8, 1.2]
+  leiden_primary: 0.8                 # the one carried forward; sweep is saved for review
+
+# ---- differential expression ----
+de:
+  method: pseudobulk_deseq2
+  min_cells_per_library: 10           # cells needed in a sample x cell type library
+  min_samples_per_group: 3            # below this, the cell type is skipped not tested
+  alpha: 0.05
+  # Baseline level of keys.response. A positive log2FoldChange means higher in the
+  # OTHER level. Set this explicitly — the sign of every fold change depends on it.
+  reference_level: null               # e.g. "NR"
+  # >1 fans out over joblib/loky, which needs POSIX semaphores and fails in sandboxed
+  # environments. These pseudobulk matrices are small; serial is fine.
+  n_cpus: 1
+
+# ---- annotation review ----
+annotation:
+  # Clusters whose top two marker panels are separated by less than this (raw
+  # score_genes units) are printed for manual adjudication by workflow 03.
+  min_margin: 0.05
+
+# ---- composition ----
+composition:
+  test: mannwhitneyu                  # screening; Dirichlet-multinomial is confirmatory
+  multiple_testing: fdr_bh
+  alpha: 0.05
+
+# ---- marker panels for annotation ----
+markers:
+  CD8_T: [CD3D, CD3E, CD8A, CD8B]
+  CD4_T: [CD3D, CD3E, CD4, IL7R]
+  Treg: [FOXP3, IL2RA, CTLA4, IKZF2]
+  NK: [NKG7, GNLY, KLRD1, NCAM1, FCGR3A]
+  B: [MS4A1, CD79A, CD79B, TCL1A]
+  Plasma: [MZB1, JCHAIN, DERL3, XBP1]
+  cDC: [CD1C, CLEC9A, FCER1A, LAMP3]
+  Macrophage: [CD68, CD14, LYZ, C1QA, APOE]
+  Mast: [TPSAB1, CPA3, MS4A2]
+  Endothelial: [PECAM1, VWF, CLDN5, CDH5]
+  Fibroblast: [COL1A1, COL1A2, DCN, LUM]
+  Malignant_Epithelial: [EPCAM, KRT8, KRT18, MLANA, PMEL]
+
+# ---- interpretation signatures ----
+signatures:
+  exhaustion: [PDCD1, CTLA4, LAG3, HAVCR2, TIGIT, TOX, ENTPD1]
+  cytotoxicity: [GZMA, GZMB, GZMK, PRF1, NKG7, IFNG, GNLY]
+  memory_stemness: [TCF7, SELL, IL7R, CCR7, LEF1]
+  ifn_response: [ISG15, IFIT1, IFIT3, MX1, OAS1, STAT1]
+  proliferation: [MKI67, TOP2A, STMN1, TYMS]
+signature_compartment: CD8_T

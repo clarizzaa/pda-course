@@ -1,0 +1,32 @@
+# Exact versions the pipeline was last verified against (WORKSPACE.md rule 2).
+# Recreate with:
+#   conda env create -f environment/environment.yml
+#   conda activate pda-scrna
+#   pip install -r environment/requirements.txt
+#
+# harmonypy and pydeseq2 are NOT on conda-forge and must come from pip; they are listed
+# in requirements.txt rather than here.
+#
+# Verified: all 10 tests in tests/ pass on this combination (see reports/DECISIONS.md).
+name: pda-scrna
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12.14
+  - scanpy=1.12.4
+  - anndata=0.13.4
+  - numpy=2.5.3
+  - pandas=3.0.6
+  - scipy=1.18.1
+  - matplotlib=3.11.2
+  - seaborn=0.13.2
+  - statsmodels=0.15.0
+  - leidenalg=0.12.0
+  - python-igraph=1.0.0
+  - pyyaml=6.0.3
+  - h5py=3.16.0
+  - numba=0.68.0
+  - pytest=9.1.1
+  - pip
+  - pip:
+      - -r requirements.txt

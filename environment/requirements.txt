@@ -1,0 +1,5 @@
+# pip-only dependencies: neither of the first two resolves on conda-forge.
+# scikit-misc is required by scanpy's flavor="seurat_v3" HVG selection.
+harmonypy==2.0.2
+pydeseq2==0.5.4
+scikit-misc==0.5.2
